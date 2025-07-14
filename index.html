@@ -3,16 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Метеостанция</title>
-  <link rel="stylesheet" href="styles.css">
+  <title>Sauber Weather Station</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-</head>
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Метеостанция ESP8266</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -78,13 +70,25 @@
       left: 50%;
       transform: translateX(-50%);
     }
+    .status {
+      margin-top: 10px;
+      padding: 5px;
+      border-radius: 3px;
+      text-align: center;
+    }
+    .online {
+      background: #d4edda;
+      color: #155724;
+    }
+    .offline {
+      background: #f8d7da;
+      color: #721c24;
+    }
   </style>
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
 </head>
 <body>
   <div class="container">
-    <h1>🌡 Sauber Weather</h1>
+    <h1>🌡 Sauber Weather Station</h1>
     
     <div class="sensor-card">
       <div class="sensor-header">
@@ -105,6 +109,7 @@
           <span id="altitude">-- м</span>
         </div>
       </div>
+      <div id="status" class="status offline">Нет соединения с сервером</div>
     </div>
 
     <div id="map-container">
@@ -113,20 +118,37 @@
     </div>
   </div>
 
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.2.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.2.1/firebase-database.js"></script>
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
   
-  <!-- Основной скрипт -->
   <script>
-    // Конфигурация (ЗАМЕНИТЕ НА ВАШИ ДАННЫЕ!)
-    const ESP_IP = "192.168.68.102"; // IP вашего ESP8266
-    const SENSOR_COORDS = [55.215463, 61.291353]; // Координаты датчика
+    // Конфигурация Firebase (ЗАМЕНИТЕ НА ВАШИ ДАННЫЕ!)
+    const firebaseConfig = {
+      apiKey: "AIzaSyYOUR_API_KEY",
+      authDomain: "sauberweather.firebaseapp.com",
+      databaseURL: "https://sauberweather-default-rtdb.firebaseio.com",
+      projectId: "sauberweather",
+      storageBucket: "sauberweather.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "1:YOUR_APP_ID:web:YOUR_APP_ID"
+    };
+
+    // Инициализация Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    // Координаты датчика (ЗАМЕНИТЕ НА ВАШИ!)
+    const SENSOR_COORDS = [55.215463, 61.291353];
 
     // Элементы интерфейса
     const elements = {
       temp: document.getElementById("temp"),
       pressure: document.getElementById("pressure"),
       altitude: document.getElementById("altitude"),
+      status: document.getElementById("status"),
       showMapBtn: document.getElementById("show-map-btn"),
       closeMapBtn: document.getElementById("close-map-btn"),
       mapContainer: document.getElementById("map-container"),
@@ -137,33 +159,21 @@
     // ===== КАРТА =====
     function initMap() {
       if (!elements.map) {
-        // Создаем карту только один раз
         elements.map = L.map('map').setView(SENSOR_COORDS, 13);
-        
-        // Добавляем слой OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap'
         }).addTo(elements.map);
         
-        // Создаем маркер
         elements.marker = L.marker(SENSOR_COORDS)
           .addTo(elements.map)
           .bindPopup("<b>Датчик V1.0</b><br>Загрузка данных...");
       }
     }
 
-    // ===== ДАННЫЕ С ДАТЧИКА =====
-    async function fetchSensorData() {
-      try {
-        const response = await fetch(`http://${ESP_IP}/data`);
-        
-        if (!response.ok) {
-          throw new Error(`Ошибка HTTP: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log("Данные с датчика:", data); // Для отладки
-
+    // ===== ОБНОВЛЕНИЕ ДАННЫХ =====
+    function updateData(snapshot) {
+      const data = snapshot.val();
+      if (data) {
         // Обновляем данные на странице
         elements.temp.textContent = data.temp !== undefined ? 
           `${data.temp.toFixed(1)} °C` : "-- °C";
@@ -174,6 +184,10 @@
         elements.altitude.textContent = data.altitude !== undefined ? 
           `${data.altitude.toFixed(1)} м` : "-- м";
 
+        // Обновляем статус
+        elements.status.textContent = "Данные обновлены: " + new Date().toLocaleTimeString();
+        elements.status.className = "status online";
+
         // Обновляем маркер на карте
         if (elements.marker) {
           elements.marker.setPopupContent(`
@@ -183,13 +197,6 @@
             🏔 ${elements.altitude.textContent}
           `);
         }
-
-      } catch (error) {
-        console.error("Ошибка при получении данных:", error);
-        // Показываем прочерки при ошибке
-        elements.temp.textContent = "-- °C";
-        elements.pressure.textContent = "-- гПа";
-        elements.altitude.textContent = "-- м";
       }
     }
 
@@ -198,8 +205,7 @@
       // Кнопка "Показать карту"
       elements.showMapBtn.addEventListener("click", () => {
         elements.mapContainer.style.display = "block";
-        initMap(); // Инициализируем карту при первом клике
-        fetchSensorData(); // Обновляем данные
+        initMap();
       });
 
       // Кнопка "Закрыть карту"
@@ -212,11 +218,11 @@
     document.addEventListener("DOMContentLoaded", () => {
       setupEventListeners();
       
-      // Первый запрос данных
-      fetchSensorData();
-      
-      // Автообновление каждые 5 секунд
-      setInterval(fetchSensorData, 5000);
+      // Подписываемся на изменения данных в Firebase
+      database.ref('/weather').on('value', updateData, (error) => {
+        elements.status.textContent = "Ошибка подключения: " + error.message;
+        elements.status.className = "status offline";
+      });
     });
   </script>
 </body>
