@@ -1,0 +1,223 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Метеостанция</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+</head>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Метеостанция ESP8266</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .sensor-card {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .sensor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .sensor-data {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      text-align: center;
+    }
+    .data-item {
+      font-size: 18px;
+    }
+    .icon {
+      font-size: 24px;
+      display: block;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #map-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: white;
+      z-index: 1000;
+      display: none;
+    }
+    #map {
+      height: 90%;
+      width: 100%;
+    }
+    #close-map-btn {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+  </style>
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>🌡 Sauber Weather</h1>
+    
+    <div class="sensor-card">
+      <div class="sensor-header">
+        <h2>Датчик Version 1.0</h2>
+        <button id="show-map-btn" type="button">📍 Карта</button>
+      </div>
+      <div class="sensor-data">
+        <div class="data-item">
+          <span class="icon">🌡</span>
+          <span id="temp">-- °C</span>
+        </div>
+        <div class="data-item">
+          <span class="icon">📌</span>
+          <span id="pressure">-- гПа</span>
+        </div>
+        <div class="data-item">
+          <span class="icon">🏔</span>
+          <span id="altitude">-- м</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="map-container">
+      <div id="map"></div>
+      <button id="close-map-btn" type="button">✖ Закрыть</button>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+  
+  <!-- Основной скрипт -->
+  <script>
+    // Конфигурация (ЗАМЕНИТЕ НА ВАШИ ДАННЫЕ!)
+    const ESP_IP = "192.168.68.102"; // IP вашего ESP8266
+    const SENSOR_COORDS = [55.215463, 61.291353]; // Координаты датчика
+
+    // Элементы интерфейса
+    const elements = {
+      temp: document.getElementById("temp"),
+      pressure: document.getElementById("pressure"),
+      altitude: document.getElementById("altitude"),
+      showMapBtn: document.getElementById("show-map-btn"),
+      closeMapBtn: document.getElementById("close-map-btn"),
+      mapContainer: document.getElementById("map-container"),
+      map: null,
+      marker: null
+    };
+
+    // ===== КАРТА =====
+    function initMap() {
+      if (!elements.map) {
+        // Создаем карту только один раз
+        elements.map = L.map('map').setView(SENSOR_COORDS, 13);
+        
+        // Добавляем слой OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap'
+        }).addTo(elements.map);
+        
+        // Создаем маркер
+        elements.marker = L.marker(SENSOR_COORDS)
+          .addTo(elements.map)
+          .bindPopup("<b>Датчик V1.0</b><br>Загрузка данных...");
+      }
+    }
+
+    // ===== ДАННЫЕ С ДАТЧИКА =====
+    async function fetchSensorData() {
+      try {
+        const response = await fetch(`http://${ESP_IP}/data`);
+        
+        if (!response.ok) {
+          throw new Error(`Ошибка HTTP: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log("Данные с датчика:", data); // Для отладки
+
+        // Обновляем данные на странице
+        elements.temp.textContent = data.temp !== undefined ? 
+          `${data.temp.toFixed(1)} °C` : "-- °C";
+          
+        elements.pressure.textContent = data.pressure !== undefined ? 
+          `${data.pressure.toFixed(1)} гПа` : "-- гПа";
+          
+        elements.altitude.textContent = data.altitude !== undefined ? 
+          `${data.altitude.toFixed(1)} м` : "-- м";
+
+        // Обновляем маркер на карте
+        if (elements.marker) {
+          elements.marker.setPopupContent(`
+            <b>Датчик V1.0</b><br>
+            🌡 ${elements.temp.textContent}<br>
+            📌 ${elements.pressure.textContent}<br>
+            🏔 ${elements.altitude.textContent}
+          `);
+        }
+
+      } catch (error) {
+        console.error("Ошибка при получении данных:", error);
+        // Показываем прочерки при ошибке
+        elements.temp.textContent = "-- °C";
+        elements.pressure.textContent = "-- гПа";
+        elements.altitude.textContent = "-- м";
+      }
+    }
+
+    // ===== ОБРАБОТЧИКИ СОБЫТИЙ =====
+    function setupEventListeners() {
+      // Кнопка "Показать карту"
+      elements.showMapBtn.addEventListener("click", () => {
+        elements.mapContainer.style.display = "block";
+        initMap(); // Инициализируем карту при первом клике
+        fetchSensorData(); // Обновляем данные
+      });
+
+      // Кнопка "Закрыть карту"
+      elements.closeMapBtn.addEventListener("click", () => {
+        elements.mapContainer.style.display = "none";
+      });
+    }
+
+    // ===== ЗАПУСК ПРИЛОЖЕНИЯ =====
+    document.addEventListener("DOMContentLoaded", () => {
+      setupEventListeners();
+      
+      // Первый запрос данных
+      fetchSensorData();
+      
+      // Автообновление каждые 5 секунд
+      setInterval(fetchSensorData, 5000);
+    });
+  </script>
+</body>
+</html>
