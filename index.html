@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
@@ -6,6 +6,7 @@
   <title>Sauber Weather Station</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
   <style>
+    /* Основные стили остаются без изменений */
     body {
       font-family: Arial, sans-serif;
       margin: 0;
@@ -48,14 +49,47 @@
       background: #f8f9fa;
       border-radius: 8px;
     }
+    .quality-item {
+      margin-bottom: 10px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+    }
+    .quality-item:last-child {
+      border-bottom: none;
+    }
+    .quality-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
     .quality-indicator {
       height: 10px;
       border-radius: 5px;
       margin-top: 5px;
       background: linear-gradient(to right, #4CAF50, #FFEB3B, #F44336);
+      transition: all 0.3s ease;
     }
     .quality-value {
       font-weight: bold;
+    }
+    .quality-info {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease, padding 0.3s ease;
+      background: #fff;
+      border-radius: 5px;
+      margin-top: 5px;
+    }
+    .quality-info.active {
+      max-height: 200px;
+      padding: 10px;
+      border: 1px solid #ddd;
+    }
+    .quality-info p {
+      margin: 5px 0;
+      font-size: 14px;
+      color: #555;
     }
     button {
       background: #4CAF50;
@@ -99,6 +133,11 @@
       background: #f8d7da;
       color: #721c24;
     }
+    .info-icon {
+      color: #2196F3;
+      margin-left: 5px;
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
@@ -126,18 +165,47 @@
       </div>
 
       <div class="air-quality">
-        <h3>Качество воздуха</h3>
-        <div>
-          <span>PM1.0: </span><span id="pm1_0" class="quality-value">--</span> µg/m³
+        <h3>Качество воздуха <span class="info-icon">ⓘ</span></h3>
+        
+        <div class="quality-item">
+          <div class="quality-header" onclick="toggleInfo('pm1_0_info')">
+            <span>PM1.0: <span id="pm1_0" class="quality-value">--</span> µg/m³</span>
+            <span>🔽</span>
+          </div>
           <div class="quality-indicator" id="pm1_0_indicator"></div>
+          <div class="quality-info" id="pm1_0_info">
+            <p><strong>PM1.0</strong> - ультрамелкие частицы диаметром менее 1 микрона.</p>
+            <p>⚡ <strong>Влияние:</strong> Могут проникать глубоко в лёгкие и даже в кровеносную систему.</p>
+            <p>🌫 <strong>Источники:</strong> Выхлопные газы, промышленные выбросы, горение.</p>
+          </div>
         </div>
-        <div>
-          <span>PM2.5: </span><span id="pm2_5" class="quality-value">--</span> µg/m³
+        
+        <div class="quality-item">
+          <div class="quality-header" onclick="toggleInfo('pm2_5_info')">
+            <span>PM2.5: <span id="pm2_5" class="quality-value">--</span> µg/m³</span>
+            <span>🔽</span>
+          </div>
           <div class="quality-indicator" id="pm2_5_indicator"></div>
+          <div class="quality-info" id="pm2_5_info">
+            <p><strong>PM2.5</strong> - мелкие частицы диаметром менее 2.5 микрон.</p>
+            <p>⚡ <strong>Влияние:</strong> Опасны для здоровья, вызывают респираторные заболевания.</p>
+            <p>🌫 <strong>Источники:</strong> Транспорт, промышленность, лесные пожары.</p>
+            <p>📊 <strong>Нормы:</strong> ВОЗ рекомендует не более 25 µg/m³ в сутки.</p>
+          </div>
         </div>
-        <div>
-          <span>PM10: </span><span id="pm10" class="quality-value">--</span> µg/m³
+        
+        <div class="quality-item">
+          <div class="quality-header" onclick="toggleInfo('pm10_info')">
+            <span>PM10: <span id="pm10" class="quality-value">--</span> µg/m³</span>
+            <span>🔽</span>
+          </div>
           <div class="quality-indicator" id="pm10_indicator"></div>
+          <div class="quality-info" id="pm10_info">
+            <p><strong>PM10</strong> - крупные частицы диаметром менее 10 микрон.</p>
+            <p>⚡ <strong>Влияние:</strong> Оседают в верхних дыхательных путях.</p>
+            <p>🌫 <strong>Источники:</strong> Строительная пыль, пыльца, промышленные выбросы.</p>
+            <p>📊 <strong>Нормы:</strong> ВОЗ рекомендует не более 50 µg/m³ в сутки.</p>
+          </div>
         </div>
       </div>
 
@@ -193,6 +261,17 @@
       map: null,
       marker: null
     };
+
+    // ===== ПЕРЕКЛЮЧЕНИЕ ИНФОРМАЦИОННЫХ ПАНЕЛЕЙ =====
+    function toggleInfo(id) {
+      const element = document.getElementById(id);
+      element.classList.toggle('active');
+      
+      // Изменяем иконку стрелки
+      const header = element.previousElementSibling.previousElementSibling;
+      const arrow = header.querySelector('span:last-child');
+      arrow.textContent = element.classList.contains('active') ? '🔼' : '🔽';
+    }
 
     // ===== КАРТА =====
     function initMap() {
