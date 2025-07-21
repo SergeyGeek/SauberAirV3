@@ -42,6 +42,21 @@
       font-size: 24px;
       display: block;
     }
+    .air-quality {
+      margin-top: 15px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+    .quality-indicator {
+      height: 10px;
+      border-radius: 5px;
+      margin-top: 5px;
+      background: linear-gradient(to right, #4CAF50, #FFEB3B, #F44336);
+    }
+    .quality-value {
+      font-weight: bold;
+    }
     button {
       background: #4CAF50;
       color: white;
@@ -109,6 +124,23 @@
           <span id="altitude">-- м</span>
         </div>
       </div>
+
+      <div class="air-quality">
+        <h3>Качество воздуха</h3>
+        <div>
+          <span>PM1.0: </span><span id="pm1_0" class="quality-value">--</span> µg/m³
+          <div class="quality-indicator" id="pm1_0_indicator"></div>
+        </div>
+        <div>
+          <span>PM2.5: </span><span id="pm2_5" class="quality-value">--</span> µg/m³
+          <div class="quality-indicator" id="pm2_5_indicator"></div>
+        </div>
+        <div>
+          <span>PM10: </span><span id="pm10" class="quality-value">--</span> µg/m³
+          <div class="quality-indicator" id="pm10_indicator"></div>
+        </div>
+      </div>
+
       <div id="status" class="status offline">Нет соединения с сервером</div>
     </div>
 
@@ -127,13 +159,13 @@
   <script>
     // Конфигурация Firebase (ЗАМЕНИТЕ НА ВАШИ ДАННЫЕ!)
     const firebaseConfig = {
-  apiKey: "AIzaSyAHRtJxpBQt5Dj2JSXkUqV6rGuujtgmkoY",
-  authDomain: "sauberweather.firebaseapp.com",
-  databaseURL: "https://sauberweather-default-rtdb.firebaseio.com",
-  projectId: "sauberweather",
-  storageBucket: "sauberweather.firebasestorage.app",
-  messagingSenderId: "614825734635",
-  appId: "1:614825734635:web:4c4808d32389089754e9ae"
+      apiKey: "AIzaSyYOUR_API_KEY",
+      authDomain: "sauberweather.firebaseapp.com",
+      databaseURL: "https://sauberweather-default-rtdb.firebaseio.com",
+      projectId: "sauberweather",
+      storageBucket: "sauberweather.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "1:YOUR_APP_ID:web:YOUR_APP_ID"
     };
 
     // Инициализация Firebase
@@ -148,6 +180,12 @@
       temp: document.getElementById("temp"),
       pressure: document.getElementById("pressure"),
       altitude: document.getElementById("altitude"),
+      pm1_0: document.getElementById("pm1_0"),
+      pm2_5: document.getElementById("pm2_5"),
+      pm10: document.getElementById("pm10"),
+      pm1_0_indicator: document.getElementById("pm1_0_indicator"),
+      pm2_5_indicator: document.getElementById("pm2_5_indicator"),
+      pm10_indicator: document.getElementById("pm10_indicator"),
       status: document.getElementById("status"),
       showMapBtn: document.getElementById("show-map-btn"),
       closeMapBtn: document.getElementById("close-map-btn"),
@@ -170,6 +208,37 @@
       }
     }
 
+    // ===== ОЦЕНКА КАЧЕСТВА ВОЗДУХА =====
+    function getAirQualityColor(value, max) {
+      const ratio = Math.min(value / max, 1);
+      if (ratio < 0.5) {
+        return `hsl(${120 * ratio}, 75%, 50%)`; // Зеленый-желтый
+      } else {
+        return `hsl(${120 - (120 * (ratio - 0.5) * 2)}, 75%, 50%)`; // Желтый-красный
+      }
+    }
+
+    function updateAirQualityIndicators(pm1_0, pm2_5, pm10) {
+      // Обновляем значения
+      elements.pm1_0.textContent = pm1_0 !== undefined ? pm1_0 : "--";
+      elements.pm2_5.textContent = pm2_5 !== undefined ? pm2_5 : "--";
+      elements.pm10.textContent = pm10 !== undefined ? pm10 : "--";
+
+      // Обновляем индикаторы
+      if (pm1_0 !== undefined) {
+        elements.pm1_0_indicator.style.width = `${Math.min(pm1_0 / 50 * 100, 100)}%`;
+        elements.pm1_0_indicator.style.background = getAirQualityColor(pm1_0, 50);
+      }
+      if (pm2_5 !== undefined) {
+        elements.pm2_5_indicator.style.width = `${Math.min(pm2_5 / 50 * 100, 100)}%`;
+        elements.pm2_5_indicator.style.background = getAirQualityColor(pm2_5, 50);
+      }
+      if (pm10 !== undefined) {
+        elements.pm10_indicator.style.width = `${Math.min(pm10 / 100 * 100, 100)}%`;
+        elements.pm10_indicator.style.background = getAirQualityColor(pm10, 100);
+      }
+    }
+
     // ===== ОБНОВЛЕНИЕ ДАННЫХ =====
     function updateData(snapshot) {
       const data = snapshot.val();
@@ -184,6 +253,9 @@
         elements.altitude.textContent = data.altitude !== undefined ? 
           `${data.altitude.toFixed(1)} м` : "-- м";
 
+        // Обновляем качество воздуха
+        updateAirQualityIndicators(data.pm1_0, data.pm2_5, data.pm10);
+
         // Обновляем статус
         elements.status.textContent = "Данные обновлены: " + new Date().toLocaleTimeString();
         elements.status.className = "status online";
@@ -194,7 +266,10 @@
             <b>Датчик V1.0</b><br>
             🌡 ${elements.temp.textContent}<br>
             📌 ${elements.pressure.textContent}<br>
-            🏔 ${elements.altitude.textContent}
+            🏔 ${elements.altitude.textContent}<br>
+            💨 PM1.0: ${data.pm1_0 || '--'} µg/m³<br>
+            💨 PM2.5: ${data.pm2_5 || '--'} µg/m³<br>
+            💨 PM10: ${data.pm10 || '--'} µg/m³
           `);
         }
       }
