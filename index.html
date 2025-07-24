@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sauber Weather Station</title>
+  <title>SAUBER Weather</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
@@ -14,6 +14,11 @@
       --text-primary: #1C1C1E;
       --text-secondary: #636366;
       --blur-effect: saturate(180%) blur(20px);
+      --highlight-color: rgba(255, 255, 255, 0.4);
+    }
+    
+    * {
+      box-sizing: border-box;
     }
     
     body {
@@ -23,157 +28,55 @@
       background: linear-gradient(160deg, #E6F2FF 0%, #F0F5FF 100%);
       color: var(--text-primary);
       min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+    
+    /* Солнечные блики */
+    .sunlight {
+      position: fixed;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+      transition: transform 0.1s linear;
     }
     
     .container {
-      max-width: 600px;
+      max-width: 100%;
       margin: 0 auto;
-      padding: 20px;
+      padding: 15px;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 15px;
+      position: relative;
+      z-index: 1;
     }
     
-    /* Карточки в стиле Apple */
-    .card {
-      background: var(--card-bg);
-      backdrop-filter: var(--blur-effect);
-      -webkit-backdrop-filter: var(--blur-effect);
+    /* Заголовок */
+    .header {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    
+    .header h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      margin: 0;
+      background: linear-gradient(45deg, #007AFF, #34C759);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    /* Карта погоды */
+    .weather-map-container {
+      height: 250px;
       border-radius: 18px;
-      padding: 20px;
+      overflow: hidden;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
       border: 1px solid var(--card-border);
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    
-    .card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-    }
-    
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-    }
-    
-    .card-title {
-      margin: 0;
-      font-size: 1.4rem;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-    
-    /* Стили для блока погоды */
-    .weather-main {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 20px;
-    }
-    
-    .weather-temp {
-      font-size: 48px;
-      font-weight: 300;
-      margin: 0;
-    }
-    
-    .weather-details {
-      text-align: right;
-    }
-    
-    .weather-desc {
-      font-size: 18px;
-      margin: 0 0 5px 0;
-      text-transform: capitalize;
-    }
-    
-    .weather-location {
-      font-size: 14px;
-      color: var(--text-secondary);
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 5px;
-    }
-    
-    /* Дополнительные параметры погоды */
-    .weather-params {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-      margin-top: 15px;
-    }
-    
-    .param-item {
-      display: flex;
-      align-items: center;
-      padding: 10px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.3);
-    }
-    
-    .param-icon {
-      font-size: 20px;
-      width: 30px;
-      color: var(--primary-color);
-    }
-    
-    .param-value {
-      font-weight: 500;
-    }
-    
-    .param-label {
-      font-size: 12px;
-      color: var(--text-secondary);
-    }
-    
-    /* Прогноз на 5 дней */
-    .forecast-container {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 10px;
-      margin-top: 15px;
-    }
-    
-    .forecast-day {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 10px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.3);
-      transition: all 0.3s ease;
-    }
-    
-    .forecast-day:hover {
-      background: rgba(255, 255, 255, 0.5);
-    }
-    
-    .forecast-dayname {
-      font-size: 14px;
-      font-weight: 500;
-      margin-bottom: 5px;
-    }
-    
-    .forecast-icon img {
-      width: 36px;
-      height: 36px;
-    }
-    
-    .forecast-temp {
-      font-size: 16px;
-      font-weight: 500;
-      margin-top: 5px;
-    }
-    
-    /* Карты погоды */
-    .weather-map-container {
-      height: 300px;
-      border-radius: 12px;
-      overflow: hidden;
-      margin-top: 15px;
       position: relative;
     }
     
@@ -184,65 +87,148 @@
     
     .map-controls {
       position: absolute;
-      top: 10px;
-      right: 10px;
+      bottom: 10px;
+      left: 10px;
       z-index: 1000;
       display: flex;
-      flex-direction: column;
       gap: 5px;
+      flex-wrap: wrap;
     }
     
     .map-layer-btn {
-      background: rgba(255, 255, 255, 0.8);
+      background: rgba(255, 255, 255, 0.9);
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       padding: 5px 10px;
       font-size: 12px;
       cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: all 0.2s ease;
     }
     
-    /* Стили для нашего датчика */
-    .sensor-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 15px;
-      margin-top: 10px;
+    .map-layer-btn:hover {
+      background: white;
+      transform: translateY(-2px);
     }
     
-    .sensor-item {
+    /* Прогноз по дням */
+    .forecast-scroll {
+      width: 100%;
+      overflow-x: auto;
+      padding-bottom: 10px;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    .forecast-days {
+      display: flex;
+      gap: 10px;
+      width: max-content;
+      padding: 5px;
+    }
+    
+    .forecast-day {
+      min-width: 70px;
+      padding: 12px;
+      border-radius: 14px;
+      background: var(--card-bg);
+      backdrop-filter: var(--blur-effect);
+      -webkit-backdrop-filter: var(--blur-effect);
+      border: 1px solid var(--card-border);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.05);
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 15px;
-      border-radius: 14px;
-      background: rgba(255, 255, 255, 0.4);
       transition: all 0.3s ease;
     }
     
-    .sensor-item:hover {
-      background: rgba(255, 255, 255, 0.6);
+    .forecast-day:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
     }
     
-    .sensor-icon {
-      font-size: 28px;
+    .forecast-dayname {
+      font-size: 14px;
+      font-weight: 500;
       margin-bottom: 8px;
-      color: var(--primary-color);
+    }
+    
+    .forecast-temp {
+      font-size: 16px;
+      font-weight: 500;
+    }
+    
+    /* Текущая погода */
+    .current-weather {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    
+    .weather-param {
+      background: var(--card-bg);
+      backdrop-filter: var(--blur-effect);
+      -webkit-backdrop-filter: var(--blur-effect);
+      border-radius: 14px;
+      padding: 15px;
+      border: 1px solid var(--card-border);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+      transition: all 0.3s ease;
+    }
+    
+    .weather-param:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+    }
+    
+    .param-value {
+      font-size: 20px;
+      font-weight: 500;
+      margin-bottom: 5px;
+    }
+    
+    .param-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    
+    /* Наш датчик */
+    .sensor-data {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    
+    .sensor-param {
+      background: var(--card-bg);
+      backdrop-filter: var(--blur-effect);
+      -webkit-backdrop-filter: var(--blur-effect);
+      border-radius: 14px;
+      padding: 15px;
+      border: 1px solid var(--card-border);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+      transition: all 0.3s ease;
+      text-align: center;
+    }
+    
+    .sensor-param:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
     }
     
     .sensor-value {
       font-size: 20px;
       font-weight: 500;
-      margin: 5px 0;
+      margin-bottom: 5px;
     }
     
     .sensor-label {
-      font-size: 14px;
+      font-size: 13px;
       color: var(--text-secondary);
     }
     
     /* Качество воздуха */
     .air-quality {
-      margin-top: 20px;
+      margin-top: 10px;
     }
     
     .quality-item {
@@ -253,15 +239,18 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px;
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.3);
+      padding: 12px 15px;
+      border-radius: 14px;
+      background: var(--card-bg);
+      backdrop-filter: var(--blur-effect);
+      -webkit-backdrop-filter: var(--blur-effect);
+      border: 1px solid var(--card-border);
       cursor: pointer;
       transition: all 0.3s ease;
     }
     
     .quality-header:hover {
-      background: rgba(255, 255, 255, 0.5);
+      background: rgba(255, 255, 255, 0.7);
     }
     
     .quality-indicator {
@@ -276,12 +265,12 @@
       max-height: 0;
       overflow: hidden;
       transition: max-height 0.3s ease;
-      padding: 0 10px;
+      padding: 0 15px;
     }
     
     .quality-info.active {
       max-height: 200px;
-      padding: 10px;
+      padding: 10px 15px;
     }
     
     .quality-info p {
@@ -291,38 +280,62 @@
       color: var(--text-secondary);
     }
     
-    /* Кнопки */
-    button {
-      background: rgba(0, 122, 255, 0.1);
-      color: var(--primary-color);
-      border: none;
-      padding: 8px 16px;
-      border-radius: 10px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      transition: all 0.3s ease;
+    /* Компас */
+    .compass-container {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .compass {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: var(--card-bg);
       backdrop-filter: var(--blur-effect);
       -webkit-backdrop-filter: var(--blur-effect);
-      border: 1px solid rgba(0, 122, 255, 0.1);
+      border: 1px solid var(--card-border);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
     
-    button:hover {
-      background: rgba(0, 122, 255, 0.2);
+    .compass-arrow {
+      width: 40px;
+      height: 40px;
+      background-color: #FF3B30;
+      clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+      transform-origin: 50% 100%;
+      transition: transform 0.1s ease;
     }
     
-    button i {
-      margin-right: 5px;
+    .compass-labels {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+    }
+    
+    .compass-label {
+      position: absolute;
+      font-size: 12px;
+      font-weight: bold;
     }
     
     /* Статус */
     .status {
       margin-top: 15px;
-      padding: 10px;
-      border-radius: 10px;
+      padding: 12px;
+      border-radius: 14px;
       text-align: center;
       font-size: 14px;
-      background: rgba(255, 255, 255, 0.4);
+      background: var(--card-bg);
+      backdrop-filter: var(--blur-effect);
+      -webkit-backdrop-filter: var(--blur-effect);
+      border: 1px solid var(--card-border);
     }
     
     .online {
@@ -331,33 +344,6 @@
     
     .offline {
       color: #FF3B30;
-    }
-    
-    /* Карта датчика */
-    #sensor-map-container {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: white;
-      z-index: 1000;
-      display: none;
-    }
-    
-    #sensor-map {
-      height: 90%;
-      width: 100%;
-    }
-    
-    #close-sensor-map-btn {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(255, 59, 48, 0.1);
-      color: #FF3B30;
-      padding: 10px 20px;
     }
     
     /* Анимации */
@@ -370,153 +356,141 @@
       animation: fadeIn 0.5s ease forwards;
     }
     
-    .card:nth-child(1) { animation-delay: 0.1s; }
-    .card:nth-child(2) { animation-delay: 0.2s; }
-    .card:nth-child(3) { animation-delay: 0.3s; }
+    /* Мобильная адаптация */
+    @media (max-width: 500px) {
+      .current-weather {
+        grid-template-columns: 1fr;
+      }
+      
+      .sensor-data {
+        grid-template-columns: 1fr 1fr;
+      }
+      
+      .weather-map-container {
+        height: 200px;
+      }
+    }
   </style>
 </head>
 <body>
+  <!-- Солнечные блики -->
+  <div class="sunlight" id="sunlight"></div>
+  
   <div class="container">
-    <!-- Блок погоды -->
-    <div class="card">
-      <div class="card-header">
-        <h2 class="card-title">Прогноз погоды</h2>
-        <button id="refresh-weather" type="button"><i class="fas fa-sync-alt"></i>Обновить</button>
+    <!-- Заголовок -->
+    <div class="header">
+      <h1>SAUBER Weather</h1>
+    </div>
+    
+    <!-- Карта погоды -->
+    <div class="weather-map-container">
+      <div id="weather-map" class="weather-map"></div>
+      <div class="map-controls">
+        <button class="map-layer-btn" onclick="changeWeatherLayer('temp_new')">Температура</button>
+        <button class="map-layer-btn" onclick="changeWeatherLayer('clouds_new')">Облака</button>
+        <button class="map-layer-btn" onclick="changeWeatherLayer('precipitation_new')">Осадки</button>
+        <button class="map-layer-btn" onclick="changeWeatherLayer('wind_new')">Ветер</button>
       </div>
-      
-      <div class="weather-main">
-        <div>
-          <div class="weather-temp" id="weather-temp">--°</div>
-          <div class="weather-desc" id="weather-desc">Загрузка...</div>
-        </div>
-        <div class="weather-details">
-          <div id="weather-location" class="weather-location">
-            <i class="fas fa-map-marker-alt"></i> Челябинск
-          </div>
-        </div>
-      </div>
-      
-      <div class="weather-params">
-        <div class="param-item">
-          <div class="param-icon"><i class="fas fa-wind"></i></div>
-          <div>
-            <div class="param-value" id="weather-wind">-- м/с</div>
-            <div class="param-label">Ветер</div>
-          </div>
-        </div>
-        <div class="param-item">
-          <div class="param-icon"><i class="fas fa-tint"></i></div>
-          <div>
-            <div class="param-value" id="weather-humidity">--%</div>
-            <div class="param-label">Влажность</div>
-          </div>
-        </div>
-        <div class="param-item">
-          <div class="param-icon"><i class="fas fa-cloud-rain"></i></div>
-          <div>
-            <div class="param-value" id="weather-precipitation">-- мм</div>
-            <div class="param-label">Осадки</div>
-          </div>
-        </div>
-        <div class="param-item">
-          <div class="param-icon"><i class="fas fa-eye"></i></div>
-          <div>
-            <div class="param-value" id="weather-visibility">-- км</div>
-            <div class="param-label">Видимость</div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="forecast-container" id="forecast-container">
+    </div>
+    
+    <!-- Прогноз по дням -->
+    <div class="forecast-scroll">
+      <div class="forecast-days" id="forecast-days">
         <!-- Прогноз будет загружен здесь -->
       </div>
+    </div>
+    
+    <!-- Текущая погода -->
+    <div class="current-weather">
+      <div class="weather-param">
+        <div class="param-value" id="weather-temp">--°</div>
+        <div class="param-label">Температура</div>
+      </div>
+      <div class="weather-param">
+        <div class="param-value" id="weather-wind">-- м/с</div>
+        <div class="param-label">Ветер</div>
+      </div>
+      <div class="weather-param">
+        <div class="param-value" id="weather-humidity">--%</div>
+        <div class="param-label">Влажность</div>
+      </div>
+      <div class="weather-param">
+        <div class="param-value" id="weather-pressure">-- гПа</div>
+        <div class="param-label">Давление</div>
+      </div>
+    </div>
+    
+    <!-- Наш датчик -->
+    <div class="sensor-data">
+      <div class="sensor-param">
+        <div class="sensor-value" id="temp">--°</div>
+        <div class="sensor-label">Температура</div>
+      </div>
+      <div class="sensor-param">
+        <div class="sensor-value" id="pressure">-- гПа</div>
+        <div class="sensor-label">Давление</div>
+      </div>
+      <div class="sensor-param">
+        <div class="sensor-value" id="altitude">-- м</div>
+        <div class="sensor-label">Высота</div>
+      </div>
+    </div>
+    
+    <!-- Качество воздуха -->
+    <div class="air-quality">
+      <div class="quality-item">
+        <div class="quality-header" onclick="toggleInfo('pm1_0_info')">
+          <span>PM1.0: <span id="pm1_0" class="quality-value">--</span> µg/m³</span>
+          <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="quality-indicator" id="pm1_0_indicator"></div>
+        <div class="quality-info" id="pm1_0_info">
+          <p><strong>PM1.0</strong> - ультрамелкие частицы диаметром менее 1 микрона.</p>
+          <p><i class="fas fa-lungs"></i> <strong>Влияние:</strong> Могут проникать глубоко в лёгкие и даже в кровеносную систему.</p>
+        </div>
+      </div>
       
-      <div class="weather-map-container">
-        <div id="weather-map" class="weather-map"></div>
-        <div class="map-controls">
-          <button class="map-layer-btn" onclick="changeWeatherLayer('temp_new')">Температура</button>
-          <button class="map-layer-btn" onclick="changeWeatherLayer('clouds_new')">Облака</button>
-          <button class="map-layer-btn" onclick="changeWeatherLayer('precipitation_new')">Осадки</button>
-          <button class="map-layer-btn" onclick="changeWeatherLayer('wind_new')">Ветер</button>
-          <button class="map-layer-btn" onclick="changeWeatherLayer('pressure_new')">Давление</button>
+      <div class="quality-item">
+        <div class="quality-header" onclick="toggleInfo('pm2_5_info')">
+          <span>PM2.5: <span id="pm2_5" class="quality-value">--</span> µg/m³</span>
+          <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="quality-indicator" id="pm2_5_indicator"></div>
+        <div class="quality-info" id="pm2_5_info">
+          <p><strong>PM2.5</strong> - мелкие частицы диаметром менее 2.5 микрон.</p>
+          <p><i class="fas fa-lungs"></i> <strong>Влияние:</strong> Опасны для здоровья, вызывают респираторные заболевания.</p>
+          <p><i class="fas fa-clipboard-check"></i> <strong>Нормы:</strong> ВОЗ рекомендует не более 25 µg/m³ в сутки.</p>
+        </div>
+      </div>
+      
+      <div class="quality-item">
+        <div class="quality-header" onclick="toggleInfo('pm10_info')">
+          <span>PM10: <span id="pm10" class="quality-value">--</span> µg/m³</span>
+          <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="quality-indicator" id="pm10_indicator"></div>
+        <div class="quality-info" id="pm10_info">
+          <p><strong>PM10</strong> - крупные частицы диаметром менее 10 микрон.</p>
+          <p><i class="fas fa-lungs"></i> <strong>Влияние:</strong> Оседают в верхних дыхательных путях.</p>
+          <p><i class="fas fa-clipboard-check"></i> <strong>Нормы:</strong> ВОЗ рекомендует не более 50 µg/m³ в сутки.</p>
         </div>
       </div>
     </div>
     
-    <!-- Блок нашего датчика -->
-    <div class="card">
-      <div class="card-header">
-        <h2 class="card-title">Показания датчика</h2>
-        <button id="show-sensor-map-btn" type="button"><i class="fas fa-map-marked-alt"></i>Карта</button>
-      </div>
-      
-      <div class="sensor-grid">
-        <div class="sensor-item">
-          <div class="sensor-icon">🌡</div>
-          <div class="sensor-value" id="temp">--°</div>
-          <div class="sensor-label">Температура</div>
-        </div>
-        <div class="sensor-item">
-          <div class="sensor-icon">📌</div>
-          <div class="sensor-value" id="pressure">-- гПа</div>
-          <div class="sensor-label">Давление</div>
-        </div>
-        <div class="sensor-item">
-          <div class="sensor-icon">🏔</div>
-          <div class="sensor-value" id="altitude">-- м</div>
-          <div class="sensor-label">Высота</div>
+    <!-- Компас -->
+    <div class="compass-container">
+      <div class="compass">
+        <div class="compass-arrow" id="compass-arrow"></div>
+        <div class="compass-labels">
+          <div class="compass-label" style="top: 5px; left: 50%; transform: translateX(-50%);">N</div>
+          <div class="compass-label" style="bottom: 5px; left: 50%; transform: translateX(-50%);">S</div>
+          <div class="compass-label" style="top: 50%; left: 5px; transform: translateY(-50%);">W</div>
+          <div class="compass-label" style="top: 50%; right: 5px; transform: translateY(-50%);">E</div>
         </div>
       </div>
-      
-      <div class="air-quality">
-        <h3 style="margin-bottom: 15px;">Качество воздуха <i class="fas fa-info-circle" style="color: var(--primary-color);"></i></h3>
-        
-        <div class="quality-item">
-          <div class="quality-header" onclick="toggleInfo('pm1_0_info')">
-            <span>PM1.0: <span id="pm1_0" class="quality-value">--</span> µg/m³</span>
-            <i class="fas fa-chevron-down"></i>
-          </div>
-          <div class="quality-indicator" id="pm1_0_indicator"></div>
-          <div class="quality-info" id="pm1_0_info">
-            <p><strong>PM1.0</strong> - ультрамелкие частицы диаметром менее 1 микрона.</p>
-            <p><i class="fas fa-lungs"></i> <strong>Влияние:</strong> Могут проникать глубоко в лёгкие и даже в кровеносную систему.</p>
-          </div>
-        </div>
-        
-        <div class="quality-item">
-          <div class="quality-header" onclick="toggleInfo('pm2_5_info')">
-            <span>PM2.5: <span id="pm2_5" class="quality-value">--</span> µg/m³</span>
-            <i class="fas fa-chevron-down"></i>
-          </div>
-          <div class="quality-indicator" id="pm2_5_indicator"></div>
-          <div class="quality-info" id="pm2_5_info">
-            <p><strong>PM2.5</strong> - мелкие частицы диаметром менее 2.5 микрон.</p>
-            <p><i class="fas fa-lungs"></i> <strong>Влияние:</strong> Опасны для здоровья, вызывают респираторные заболевания.</p>
-            <p><i class="fas fa-clipboard-check"></i> <strong>Нормы:</strong> ВОЗ рекомендует не более 25 µg/m³ в сутки.</p>
-          </div>
-        </div>
-        
-        <div class="quality-item">
-          <div class="quality-header" onclick="toggleInfo('pm10_info')">
-            <span>PM10: <span id="pm10" class="quality-value">--</span> µg/m³</span>
-            <i class="fas fa-chevron-down"></i>
-          </div>
-          <div class="quality-indicator" id="pm10_indicator"></div>
-          <div class="quality-info" id="pm10_info">
-            <p><strong>PM10</strong> - крупные частицы диаметром менее 10 микрон.</p>
-            <p><i class="fas fa-lungs"></i> <strong>Влияние:</strong> Оседают в верхних дыхательных путях.</p>
-            <p><i class="fas fa-clipboard-check"></i> <strong>Нормы:</strong> ВОЗ рекомендует не более 50 µg/m³ в сутки.</p>
-          </div>
-        </div>
-      </div>
-      
-      <div id="status" class="status offline">Нет соединения с сервером</div>
     </div>
     
-    <div id="sensor-map-container">
-      <div id="sensor-map"></div>
-      <button id="close-sensor-map-btn" type="button"><i class="fas fa-times"></i> Закрыть карту</button>
-    </div>
+    <div id="status" class="status offline">Нет соединения с сервером</div>
   </div>
 
   <!-- Подключаемые библиотеки -->
@@ -528,7 +502,7 @@
   <script>
     // Конфигурация Firebase
     const firebaseConfig = {
-      apiKey: "AIzaSyYOUR_API_KEY",
+      apiKey: "W5UxNy6wP8sRXfTVWhJK2U3iY6ta4mQRs0AQz8vA",
       authDomain: "sauberweather.firebaseapp.com",
       databaseURL: "https://sauberweather-default-rtdb.firebaseio.com",
       projectId: "sauberweather",
@@ -558,13 +532,10 @@
     const elements = {
       // Погода
       weatherTemp: document.getElementById("weather-temp"),
-      weatherDesc: document.getElementById("weather-desc"),
       weatherWind: document.getElementById("weather-wind"),
       weatherHumidity: document.getElementById("weather-humidity"),
-      weatherPrecipitation: document.getElementById("weather-precipitation"),
-      weatherVisibility: document.getElementById("weather-visibility"),
-      refreshWeatherBtn: document.getElementById("refresh-weather"),
-      forecastContainer: document.getElementById("forecast-container"),
+      weatherPressure: document.getElementById("weather-pressure"),
+      forecastDays: document.getElementById("forecast-days"),
       
       // Датчик
       temp: document.getElementById("temp"),
@@ -577,16 +548,40 @@
       pm2_5_indicator: document.getElementById("pm2_5_indicator"),
       pm10_indicator: document.getElementById("pm10_indicator"),
       status: document.getElementById("status"),
-      showSensorMapBtn: document.getElementById("show-sensor-map-btn"),
       
       // Карты
-      closeSensorMapBtn: document.getElementById("close-sensor-map-btn"),
-      sensorMapContainer: document.getElementById("sensor-map-container"),
-      sensorMap: null,
-      sensorMarker: null,
       weatherMap: null,
-      currentWeatherLayer: null
+      currentWeatherLayer: null,
+      
+      // Компас
+      compassArrow: document.getElementById("compass-arrow"),
+      
+      // Солнечные блики
+      sunlight: document.getElementById("sunlight")
     };
+
+    // ===== СОЛНЕЧНЫЕ БЛИКИ =====
+    function handleDeviceOrientation(event) {
+      if (!event.beta || !event.gamma) return;
+      
+      // Обновляем позицию солнечных бликов
+      const x = (event.gamma / 90) * 100;
+      const y = (event.beta / 90) * 100;
+      elements.sunlight.style.transform = `translate(${x}%, ${y}%)`;
+    }
+
+    // ===== КОМПАС =====
+    function handleCompass(event) {
+      if (event.webkitCompassHeading) {
+        // Для iOS
+        const heading = event.webkitCompassHeading;
+        elements.compassArrow.style.transform = `rotate(${360 - heading}deg)`;
+      } else if (event.alpha !== null) {
+        // Для других устройств
+        const alpha = event.alpha;
+        elements.compassArrow.style.transform = `rotate(${360 - alpha}deg)`;
+      }
+    }
 
     // ===== ФУНКЦИИ ДЛЯ НАШЕГО ДАТЧИКА =====
     function toggleInfo(id) {
@@ -645,24 +640,19 @@
         
       } catch (error) {
         console.error('Ошибка при загрузке данных погоды:', error);
-        elements.weatherDesc.textContent = "Ошибка загрузки данных";
       }
     }
 
     function updateCurrentWeather(data) {
       elements.weatherTemp.textContent = `${Math.round(data.main.temp)}°`;
-      elements.weatherDesc.textContent = data.weather[0].description;
       elements.weatherWind.textContent = `${data.wind.speed} м/с`;
       elements.weatherHumidity.textContent = `${data.main.humidity}%`;
-      
-      const precipitation = data.rain ? data.rain["1h"] || 0 : 0;
-      elements.weatherPrecipitation.textContent = `${precipitation} мм`;
-      elements.weatherVisibility.textContent = `${(data.visibility / 1000).toFixed(1)} км`;
+      elements.weatherPressure.textContent = `${Math.round(data.main.pressure)} гПа`;
     }
 
     function updateWeatherForecast(data) {
       // Очищаем контейнер
-      elements.forecastContainer.innerHTML = '';
+      elements.forecastDays.innerHTML = '';
       
       // Группируем по дням
       const dailyForecast = {};
@@ -675,13 +665,11 @@
         if (!dailyForecast[dayKey]) {
           dailyForecast[dayKey] = {
             date: date,
-            temps: [],
-            icons: []
+            temps: []
           };
         }
         
         dailyForecast[dayKey].temps.push(item.main.temp);
-        dailyForecast[dayKey].icons.push(item.weather[0].icon);
       });
       
       // Добавляем прогноз на 5 дней (сегодня + 4 следующих)
@@ -695,30 +683,16 @@
         const minTemp = Math.min(...day.temps);
         const maxTemp = Math.max(...day.temps);
         
-        // Наиболее частая иконка
-        const mostFrequentIcon = mode(day.icons);
-        
         // Создаем элемент дня
         const dayElement = document.createElement('div');
         dayElement.className = 'forecast-day';
         dayElement.innerHTML = `
           <div class="forecast-dayname">${dayName}</div>
-          <div class="forecast-icon">
-            <img src="https://openweathermap.org/img/wn/${mostFrequentIcon}.png" alt="" width="40">
-          </div>
           <div class="forecast-temp">${Math.round(maxTemp)}°/${Math.round(minTemp)}°</div>
         `;
         
-        elements.forecastContainer.appendChild(dayElement);
+        elements.forecastDays.appendChild(dayElement);
       });
-    }
-
-    // Функция для нахождения моды (наиболее частого значения)
-    function mode(arr) {
-      return arr.sort((a, b) =>
-            arr.filter(v => v === a).length
-          - arr.filter(v => v === b).length
-      ).pop();
     }
 
     // ===== КАРТЫ ПОГОДЫ =====
@@ -749,20 +723,6 @@
       ).addTo(elements.weatherMap);
     }
 
-    // ===== КАРТА ДАТЧИКА =====
-    function initSensorMap() {
-      if (!elements.sensorMap) {
-        elements.sensorMap = L.map('sensor-map').setView(SENSOR_COORDS, 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap'
-        }).addTo(elements.sensorMap);
-        
-        elements.sensorMarker = L.marker(SENSOR_COORDS)
-          .addTo(elements.sensorMap)
-          .bindPopup("<b>Датчик V1.0</b><br>Загрузка данных...");
-      }
-    }
-
     // ===== ОБНОВЛЕНИЕ ДАННЫХ С ДАТЧИКА =====
     function updateSensorData(snapshot) {
       const data = snapshot.val();
@@ -783,43 +743,11 @@
         // Обновляем статус
         elements.status.textContent = "Данные обновлены: " + new Date().toLocaleTimeString();
         elements.status.className = "status online";
-
-        // Обновляем маркер на карте
-        if (elements.sensorMarker) {
-          elements.sensorMarker.setPopupContent(`
-            <b>Датчик V1.0</b><br>
-            🌡 ${elements.temp.textContent}<br>
-            📌 ${elements.pressure.textContent}<br>
-            🏔 ${elements.altitude.textContent}<br>
-            💨 PM1.0: ${data.pm1_0 || '--'} µg/m³<br>
-            💨 PM2.5: ${data.pm2_5 || '--'} µg/m³<br>
-            💨 PM10: ${data.pm10 || '--'} µg/m³
-          `);
-        }
       }
-    }
-
-    // ===== ОБРАБОТЧИКИ СОБЫТИЙ =====
-    function setupEventListeners() {
-      // Кнопка "Показать карту датчика"
-      elements.showSensorMapBtn.addEventListener("click", () => {
-        elements.sensorMapContainer.style.display = "block";
-        initSensorMap();
-      });
-
-      // Кнопка "Закрыть карту датчика"
-      elements.closeSensorMapBtn.addEventListener("click", () => {
-        elements.sensorMapContainer.style.display = "none";
-      });
-      
-      // Кнопка "Обновить погоду"
-      elements.refreshWeatherBtn.addEventListener("click", fetchWeatherData);
     }
 
     // ===== ЗАПУСК ПРИЛОЖЕНИЯ =====
     document.addEventListener("DOMContentLoaded", () => {
-      setupEventListeners();
-      
       // Подписываемся на изменения данных в Firebase
       database.ref('/weather').on('value', updateSensorData, (error) => {
         elements.status.textContent = "Ошибка подключения: " + error.message;
@@ -831,6 +759,27 @@
       
       // Обновляем погоду каждые 30 минут
       setInterval(fetchWeatherData, 30 * 60 * 1000);
+      
+      // Настраиваем обработчики для гироскопа и компаса
+      if (window.DeviceOrientationEvent) {
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+          // Запрос разрешения для iOS 13+
+          DeviceOrientationEvent.requestPermission()
+            .then(permissionState => {
+              if (permissionState === 'granted') {
+                window.addEventListener('deviceorientation', handleDeviceOrientation);
+                window.addEventListener('deviceorientationabsolute', handleCompass);
+              }
+            })
+            .catch(console.error);
+        } else {
+          // Для других браузеров
+          window.addEventListener('deviceorientation', function(e) {
+            handleDeviceOrientation(e);
+            handleCompass(e);
+          });
+        }
+      }
     });
   </script>
 </body>
