@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sauber Weather Station</title>
+  <title>Sauber Air Monitoring System</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
     :root {
       --primary-color: #007AFF;
-      --card-bg: rgba(255, 255, 255, 0.8);
-      --card-border: rgba(255, 255, 255, 0.2);
+      --card-bg: rgba(255, 255, 255, 0.9);
+      --card-border: rgba(0, 0, 0, 0.1);
       --text-primary: #1C1C1E;
       --text-secondary: #636366;
       --blur-effect: saturate(180%) blur(20px);
@@ -32,6 +32,15 @@
       display: flex;
       flex-direction: column;
       gap: 20px;
+    }
+    
+    /* Заголовок системы */
+    .system-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: #000;
+      text-align: center;
+      margin-bottom: 10px;
     }
     
     /* Карточки в стиле Apple */
@@ -65,140 +74,15 @@
       color: var(--text-primary);
     }
     
-    /* Стили для блока погоды */
-    .weather-main {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 20px;
-    }
-    
-    .weather-temp {
-      font-size: 48px;
-      font-weight: 300;
-      margin: 0;
-    }
-    
-    .weather-details {
-      text-align: right;
-    }
-    
-    .weather-desc {
-      font-size: 18px;
-      margin: 0 0 5px 0;
-      text-transform: capitalize;
-    }
-    
-    .weather-location {
-      font-size: 14px;
-      color: var(--text-secondary);
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 5px;
-    }
-    
-    /* Дополнительные параметры погоды */
-    .weather-params {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-      margin-top: 15px;
-    }
-    
-    .param-item {
-      display: flex;
-      align-items: center;
-      padding: 10px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.3);
-    }
-    
-    .param-icon {
-      font-size: 20px;
-      width: 30px;
-      color: var(--primary-color);
-    }
-    
-    .param-value {
-      font-weight: 500;
-    }
-    
-    .param-label {
-      font-size: 12px;
-      color: var(--text-secondary);
-    }
-    
-    /* Прогноз на 5 дней */
-    .forecast-wrapper {
-      width: 100%;
-      overflow-x: auto;
-      margin-top: 15px;
-      padding-bottom: 10px;
-    }
-    
-    .forecast-container {
-      display: flex;
-      gap: 10px;
-      width: max-content;
-      padding: 5px;
-    }
-    
-    .forecast-day {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 10px;
-      min-width: 70px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.3);
-      transition: all 0.3s ease;
-      flex-shrink: 0;
-    }
-    
-    .forecast-day:hover {
-      background: rgba(255, 255, 255, 0.5);
-    }
-    
-    .forecast-dayname {
-      font-size: 14px;
-      font-weight: 500;
-      margin-bottom: 5px;
-    }
-    
-    .forecast-icon img {
-      width: 36px;
-      height: 36px;
-    }
-    
-    .forecast-temp {
-      font-size: 16px;
-      font-weight: 500;
-      margin-top: 5px;
-    }
-    
-    /* Скрыть стандартный скроллбар */
-    .forecast-wrapper::-webkit-scrollbar {
-      height: 5px;
-    }
-    
-    .forecast-wrapper::-webkit-scrollbar-track {
-      background: rgba(0, 0, 0, 0.1);
-      border-radius: 10px;
-    }
-    
-    .forecast-wrapper::-webkit-scrollbar-thumb {
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 10px;
-    }
-    
     /* Карты погоды */
     .weather-map-container {
       height: 300px;
       border-radius: 12px;
       overflow: hidden;
-      margin-top: 15px;
+      margin-bottom: 15px;
       position: relative;
+      border: 2px solid #000;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
     
     .weather-map {
@@ -217,15 +101,80 @@
     }
     
     .map-layer-btn {
-      background: rgba(255, 255, 255, 0.8);
-      border: none;
-      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 2px solid #000;
+      border-radius: 8px;
       padding: 5px 10px;
       font-size: 12px;
       cursor: pointer;
+      font-weight: 500;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
-    /* Стили для нашего датчика */
+    /* Прогноз на неделю */
+    .forecast-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      padding-bottom: 10px;
+    }
+    
+    .forecast-container {
+      display: flex;
+      gap: 10px;
+      width: max-content;
+      padding: 5px;
+    }
+    
+    .forecast-day {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px;
+      min-width: 70px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.5);
+      transition: all 0.3s ease;
+      border: 2px solid #000;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .forecast-day:hover {
+      background: rgba(255, 255, 255, 0.7);
+    }
+    
+    .forecast-dayname {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    
+    .forecast-icon img {
+      width: 36px;
+      height: 36px;
+    }
+    
+    .forecast-temp {
+      font-size: 16px;
+      font-weight: 600;
+      margin-top: 5px;
+    }
+    
+    /* Скрыть стандартный скроллбар */
+    .forecast-wrapper::-webkit-scrollbar {
+      height: 5px;
+    }
+    
+    .forecast-wrapper::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+    }
+    
+    .forecast-wrapper::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+    }
+    
+    /* Блок показаний датчика */
     .sensor-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -239,29 +188,60 @@
       align-items: center;
       padding: 15px;
       border-radius: 14px;
-      background: rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.5);
       transition: all 0.3s ease;
+      border: 2px solid #000;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
     }
     
     .sensor-item:hover {
-      background: rgba(255, 255, 255, 0.6);
-    }
-    
-    .sensor-icon {
-      font-size: 28px;
-      margin-bottom: 8px;
-      color: var(--primary-color);
+      background: rgba(255, 255, 255, 0.7);
     }
     
     .sensor-value {
       font-size: 20px;
-      font-weight: 500;
+      font-weight: 600;
       margin: 5px 0;
     }
     
     .sensor-label {
       font-size: 14px;
       color: var(--text-secondary);
+      font-weight: 500;
+    }
+    
+    /* Блок параметров погоды */
+    .weather-params {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 15px;
+    }
+    
+    .param-item {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.5);
+      border: 2px solid #000;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .param-icon {
+      font-size: 20px;
+      width: 30px;
+      color: var(--primary-color);
+    }
+    
+    .param-value {
+      font-weight: 600;
+    }
+    
+    .param-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
     }
     
     /* Качество воздуха */
@@ -277,15 +257,17 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px;
+      padding: 12px;
       border-radius: 10px;
-      background: rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.5);
       cursor: pointer;
       transition: all 0.3s ease;
+      border: 2px solid #000;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
     .quality-header:hover {
-      background: rgba(255, 255, 255, 0.5);
+      background: rgba(255, 255, 255, 0.7);
     }
     
     .quality-indicator {
@@ -319,16 +301,16 @@
     button {
       background: rgba(0, 122, 255, 0.1);
       color: var(--primary-color);
-      border: none;
+      border: 2px solid #000;
       padding: 8px 16px;
       border-radius: 10px;
       cursor: pointer;
       font-size: 14px;
-      font-weight: 500;
+      font-weight: 600;
       transition: all 0.3s ease;
       backdrop-filter: var(--blur-effect);
       -webkit-backdrop-filter: var(--blur-effect);
-      border: 1px solid rgba(0, 122, 255, 0.1);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
     button:hover {
@@ -346,7 +328,10 @@
       border-radius: 10px;
       text-align: center;
       font-size: 14px;
-      background: rgba(255, 255, 255, 0.4);
+      font-weight: 500;
+      background: rgba(255, 255, 255, 0.5);
+      border: 2px solid #000;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
     .online {
@@ -401,62 +386,17 @@
 </head>
 <body>
   <div class="container">
+    <!-- Заголовок системы -->
+    <h1 class="system-title">Sauber Air Monitoring System</h1>
+    
     <!-- Блок погоды -->
     <div class="card">
       <div class="card-header">
-        <h2 class="card-title">Прогноз погоды</h2>
+        <h2 class="card-title">Погода в Челябинске</h2>
         <button id="refresh-weather" type="button"><i class="fas fa-sync-alt"></i>Обновить</button>
       </div>
       
-      <div class="weather-main">
-        <div>
-          <div class="weather-temp" id="weather-temp">--°</div>
-          <div class="weather-desc" id="weather-desc">Загрузка...</div>
-        </div>
-        <div class="weather-details">
-          <div id="weather-location" class="weather-location">
-            <i class="fas fa-map-marker-alt"></i> Челябинск
-          </div>
-        </div>
-      </div>
-      
-      <div class="weather-params">
-        <div class="param-item">
-          <div class="param-icon"><i class="fas fa-wind"></i></div>
-          <div>
-            <div class="param-value" id="weather-wind">-- м/с</div>
-            <div class="param-label">Ветер</div>
-          </div>
-        </div>
-        <div class="param-item">
-          <div class="param-icon"><i class="fas fa-tint"></i></div>
-          <div>
-            <div class="param-value" id="weather-humidity">--%</div>
-            <div class="param-label">Влажность</div>
-          </div>
-        </div>
-        <div class="param-item">
-          <div class="param-icon"><i class="fas fa-cloud-rain"></i></div>
-          <div>
-            <div class="param-value" id="weather-precipitation">-- мм</div>
-            <div class="param-label">Осадки</div>
-          </div>
-        </div>
-        <div class="param-item">
-          <div class="param-icon"><i class="fas fa-eye"></i></div>
-          <div>
-            <div class="param-value" id="weather-visibility">-- км</div>
-            <div class="param-label">Видимость</div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="forecast-wrapper">
-        <div class="forecast-container" id="forecast-container">
-          <!-- Прогноз будет загружен здесь -->
-        </div>
-      </div>
-      
+      <!-- Карта погоды -->
       <div class="weather-map-container">
         <div id="weather-map" class="weather-map"></div>
         <div class="map-controls">
@@ -467,28 +407,32 @@
           <button class="map-layer-btn" onclick="changeWeatherLayer('pressure_new')">Давление</button>
         </div>
       </div>
+      
+      <!-- Прогноз на неделю -->
+      <div class="forecast-wrapper">
+        <div class="forecast-container" id="forecast-container">
+          <!-- Прогноз будет загружен здесь -->
+        </div>
+      </div>
     </div>
     
     <!-- Блок нашего датчика -->
     <div class="card">
       <div class="card-header">
-        <h2 class="card-title">Показания датчика</h2>
+        <h2 class="card-title">Метеостанция Парковый</h2>
         <button id="show-sensor-map-btn" type="button"><i class="fas fa-map-marked-alt"></i>Карта</button>
       </div>
       
       <div class="sensor-grid">
         <div class="sensor-item">
-          <div class="sensor-icon">🌡</div>
           <div class="sensor-value" id="temp">--°</div>
           <div class="sensor-label">Температура</div>
         </div>
         <div class="sensor-item">
-          <div class="sensor-icon">📌</div>
           <div class="sensor-value" id="pressure">-- гПа</div>
           <div class="sensor-label">Давление</div>
         </div>
         <div class="sensor-item">
-          <div class="sensor-icon">🏔</div>
           <div class="sensor-value" id="altitude">-- м</div>
           <div class="sensor-label">Высота</div>
         </div>
@@ -539,6 +483,44 @@
       <div id="status" class="status offline">Нет соединения с сервером</div>
     </div>
     
+    <!-- Блок параметров погоды -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Параметры погоды</h2>
+      </div>
+      
+      <div class="weather-params">
+        <div class="param-item">
+          <div class="param-icon"><i class="fas fa-wind"></i></div>
+          <div>
+            <div class="param-value" id="weather-wind">-- м/с</div>
+            <div class="param-label">Ветер</div>
+          </div>
+        </div>
+        <div class="param-item">
+          <div class="param-icon"><i class="fas fa-tint"></i></div>
+          <div>
+            <div class="param-value" id="weather-humidity">--%</div>
+            <div class="param-label">Влажность</div>
+          </div>
+        </div>
+        <div class="param-item">
+          <div class="param-icon"><i class="fas fa-cloud-rain"></i></div>
+          <div>
+            <div class="param-value" id="weather-precipitation">-- мм</div>
+            <div class="param-label">Осадки</div>
+          </div>
+        </div>
+        <div class="param-item">
+          <div class="param-icon"><i class="fas fa-eye"></i></div>
+          <div>
+            <div class="param-value" id="weather-visibility">-- км</div>
+            <div class="param-label">Видимость</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
     <div id="sensor-map-container">
       <div id="sensor-map"></div>
       <button id="close-sensor-map-btn" type="button"><i class="fas fa-times"></i> Закрыть карту</button>
@@ -583,8 +565,6 @@
     // Элементы интерфейса
     const elements = {
       // Погода
-      weatherTemp: document.getElementById("weather-temp"),
-      weatherDesc: document.getElementById("weather-desc"),
       weatherWind: document.getElementById("weather-wind"),
       weatherHumidity: document.getElementById("weather-humidity"),
       weatherPrecipitation: document.getElementById("weather-precipitation"),
@@ -661,7 +641,7 @@
         const forecastData = await forecastResponse.json();
         
         // Обновляем UI
-        updateCurrentWeather(currentData);
+        updateWeatherParams(currentData);
         updateWeatherForecast(forecastData);
         
         // Инициализируем карту погоды (если еще не инициализирована)
@@ -671,13 +651,10 @@
         
       } catch (error) {
         console.error('Ошибка при загрузке данных погоды:', error);
-        elements.weatherDesc.textContent = "Ошибка загрузки данных";
       }
     }
 
-    function updateCurrentWeather(data) {
-      elements.weatherTemp.textContent = `${Math.round(data.main.temp)}°`;
-      elements.weatherDesc.textContent = data.weather[0].description;
+    function updateWeatherParams(data) {
       elements.weatherWind.textContent = `${data.wind.speed} м/с`;
       elements.weatherHumidity.textContent = `${data.main.humidity}%`;
       
